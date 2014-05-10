@@ -26,14 +26,10 @@ def init():
     global shader
     global vertex_buffer
     glClearColor(1.0, 1.0, 0.0, 0.0)
-    vert_shader = shaders.compileShader("""#version 120
-void main() {
-    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
-}""".encode('ascii'), GL_VERTEX_SHADER)
-    frag_shader = shaders.compileShader("""#version 120
-void main() {
-    gl_FragColor = vec4(0, 1, 0, 1);
-}""".encode('ascii'), GL_FRAGMENT_SHADER)
+    vert_source = open('shaders/basic.vert').read().encode('ascii')
+    frag_source = open('shaders/basic.frag').read().encode('ascii')
+    vert_shader = shaders.compileShader(vert_source, GL_VERTEX_SHADER)
+    frag_shader = shaders.compileShader(frag_source, GL_FRAGMENT_SHADER)
     shader = shaders.compileProgram(vert_shader, frag_shader)
     arr = np.array([ [ 0, 1, 0 ], [ -1,-1, 0 ], [ 1,-1, 0 ], [ 2,-1, 0 ], [ 4,-1, 0 ], [ 4, 1, 0 ], [ 2,-1, 0 ], [ 4, 1, 0 ], [ 2, 1, 0 ], ], 'f')
     vertex_buffer = vbo.VBO(arr)
