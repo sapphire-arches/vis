@@ -63,7 +63,7 @@ class VertexBufferObject:
 
         self._mode = mode
         self._vbo = vbo.VBO(data)
-        self._length = len(colors)
+        self._length = len(positions)
 
     def render(self):
         self._vbo.bind()
