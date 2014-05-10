@@ -61,7 +61,6 @@ class VertexBufferObject:
         else:
             data = np.array(positions._data, 'f')
 
-        np.savetxt('points.txt', data)
         self._mode = mode
         self._vbo = vbo.VBO(data)
         self._length = len(colors)

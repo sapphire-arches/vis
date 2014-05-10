@@ -1,5 +1,5 @@
 from windowmanagement import create_window, main_loop
-from globjects import VertexBufferObject,VertexAttribute
+from globjects import VertexBufferObject, VertexAttribute, ShaderProgram
 from OpenGL.GL import *
 from OpenGL.GL import shaders
 from OpenGL.arrays import vbo
@@ -13,11 +13,11 @@ vertex_buffer = None
 
 def display():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-    shaders.glUseProgram(shader)
+    shader.bind()
     try:
       vertex_buffer.render()
     finally:
-        shaders.glUseProgram(0)
+      shader.unbind()
 
 def make_circle_point(angle, radius):
     return (cos(angle) * radius, sin(angle) * radius, 0)
@@ -55,11 +55,7 @@ def init():
     global vertex_buffer
     clear_color = hsv_to_rgb(0.99, 0.1, 0.7)
     glClearColor(clear_color[0], clear_color[1], clear_color[2], 0.0)
-    vert_source = open('shaders/basic.vert').read().encode('ascii')
-    frag_source = open('shaders/basic.frag').read().encode('ascii')
-    vert_shader = shaders.compileShader(vert_source, GL_VERTEX_SHADER)
-    frag_shader = shaders.compileShader(frag_source, GL_FRAGMENT_SHADER)
-    shader = shaders.compileProgram(vert_shader, frag_shader)
+    shader = ShaderProgram('shaders/basic.vert', 'shaders/basic.frag')
     vertex_buffer = make_circle(100, 200, 32)
 
 create_window("circles", display=display, resize=resize)
