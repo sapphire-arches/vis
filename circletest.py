@@ -36,20 +36,31 @@ def make_circle_point(angle, radius, color):
 
 def make_circle(inner_radius, outer_radius, steps):
     delta = 2 * pi / steps
+    hue_delta = -100 / steps
+    hue = -hue_delta * steps / 2
+    saturation = 0.7
+    value = 0.7
     points = []
     for i in range(0, steps):
         angle = i * delta
-#        color = (0.5, 0.5, 0.5)
-        color1 = hsv_to_rgb(angle * 180 / pi, 0.7, 0.7)
-        color2 = hsv_to_rgb((angle + delta) * 180 / pi, 0.7, 0.7)
+        color1 = hsv_to_rgb(hue            , saturation, value)
+        color2 = hsv_to_rgb(hue + hue_delta, saturation, value)
         points += make_circle_point(angle        , inner_radius, color1)
         points += make_circle_point(angle + delta, outer_radius, color2)
         points += make_circle_point(angle        , outer_radius, color1)
         points += make_circle_point(angle        , inner_radius, color1)
         points += make_circle_point(angle + delta, inner_radius, color2)
         points += make_circle_point(angle + delta, outer_radius, color2)
+        if i == steps / 2:
+            hue_delta = -hue_delta
+        hue += hue_delta
 
     return np.array(points, 'f')
+
+def resize(w, h):
+    glLoadIdentity()
+    glScale(1 / w, 1 / h, 1)
+    glViewport(0, 0, w, h)
 
 def init():
     global shader
@@ -61,11 +72,11 @@ def init():
     vert_shader = shaders.compileShader(vert_source, GL_VERTEX_SHADER)
     frag_shader = shaders.compileShader(frag_source, GL_FRAGMENT_SHADER)
     shader = shaders.compileProgram(vert_shader, frag_shader)
-    circle = make_circle(1, 2, 32)
+    circle = make_circle(100, 200, 32)
     print(circle)
     arr = np.array([ [ 0, 1, 0 ], [ -1,-1, 0 ], [ 1,-1, 0 ], [ 2,-1, 0 ], [ 4,-1, 0 ], [ 4, 1, 0 ], [ 2,-1, 0 ], [ 4, 1, 0 ], [ 2, 1, 0 ], ], 'f')
     vertex_buffer = vbo.VBO(circle)
 
-create_window("circles", display=display)
+create_window("circles", display=display, resize=resize)
 init()
 main_loop()
