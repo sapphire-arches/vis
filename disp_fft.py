@@ -22,7 +22,7 @@ print("wav read finished, finding average")
 print(sum(full_audio) / len(full_audio))
 
 analysis_width = 1024
-num_buckets = analysis_width
+num_buckets = analysis_width // 4
 huedelta = 300 / num_buckets
 full_audio += [0] * analysis_width
 
@@ -50,7 +50,6 @@ def get_partial_index(array, idx):
 def build_verts(seg):
     freqs = fft(seg)
     freqs = np.abs(freqs[1:len(freqs) // 2])
-    np.savetxt('freqs.txt', freqs)
     verts = []
     # bucketify things
     buckets = []
@@ -63,7 +62,7 @@ def build_verts(seg):
         if int(bucket_width) == 0:
             buckets[i] += get_partial_index(freqs, len(freqs) * i / num_buckets)
 
-    bucket_max = max(np.abs(buckets))
+    bucket_max = analysis_width / 4
 
     buckets = [x / bucket_max for x in buckets]
     xdelta = 800 / (len(buckets) - 1)
