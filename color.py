@@ -8,7 +8,7 @@ def hsv_to_rgb(*color):
     # c = v * s
     c = color[2] * color[1]
     # h = h / 60
-    h = color[0] / 60.0
+    h = (color[0] % 360) / 60.0
     # x = c(1 - abs(h mod 2 - 1))
     x = c * (1 - abs(h % 2 - 1))
 
