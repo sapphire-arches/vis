@@ -38,20 +38,13 @@ class VertexAttribute(Iterable):
             yield self[i]
 
 class VertexBufferObject:
-    def __init__(self, positions, colors=None, mode=GL_TRIANGLES):
-        data = None
-
+    def _build_data(self, positions, colors):
         if not isinstance(positions, VertexAttribute):
-            raise TypeError("Positions must be an instance of VertexAttribute")
-
-        self._has_color = colors is not None
-
+            raise TypeError("positions must be a VertexAttribute")
+        if colors is not None and not isinstance(colors, VertexAttribute):
+            raise TypeError("Colors must be an instance of VertexAttribute")
+        data = None
         if colors is not None:
-            if not isinstance(colors, VertexAttribute):
-                raise TypeError("Colors must be an instance of VertexAttribute")
-
-            if not len(colors) == len(positions):
-                raise TypeError("Colors and positions must be the same length (are %d vs %d)" % (len(color), len(positions)))
 
             data_backing = []
             for i in range(len(positions)):
@@ -60,10 +53,20 @@ class VertexBufferObject:
             data = np.array(data_backing, 'f')
         else:
             data = np.array(positions._data, 'f')
+        return data
+
+    def __init__(self, positions, colors=None, mode=GL_TRIANGLES):
+        self._has_color = colors is not None
+
+        data = self._build_data(positions, colors)
 
         self._mode = mode
         self._vbo = vbo.VBO(data)
         self._length = len(positions)
+
+    def replace_data(self, positions, colors=None):
+        self._has_color = colors is not None
+        self._vbo.set_array(self._build_data(positions, colors))
 
     def render(self):
         self._vbo.bind()
