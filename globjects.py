@@ -45,6 +45,8 @@ class VertexBufferObject:
             raise TypeError("Colors must be an instance of VertexAttribute")
         data = None
         if colors is not None:
+            if not len(colors) == len(positions):
+                raise ValueError("Colors and positions are unequal lengths (%d : %d)" % (len(colors), len(positions)))
 
             data_backing = []
             for i in range(len(positions)):
