@@ -90,6 +90,7 @@ def build_verts(seg):
     freq_end = freq_index(20000)
     freqs = []
     for i in range(freq_start, freq_end):
+        # see http://en.wikipedia.org/wiki/Spectral_estimation and http://en.wikipedia.org/wiki/Periodogram
         freqs.append((np.abs(freq_analysis[i] ** 2) / (freq_end - freq_start)) * (i + 1) / ( 2 * pi))
     verts = []
     colors = []
