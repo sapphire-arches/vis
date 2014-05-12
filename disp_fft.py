@@ -24,7 +24,6 @@ print("wav read finished, finding average")
 print(sum(full_audio) / len(full_audio))
 
 analysis_width = 128
-num_buckets = 128
 huedelta = 0.001
 print("padding")
 full_audio += [0] * analysis_width
@@ -94,34 +93,21 @@ def build_verts(seg):
         freqs.append((np.abs(freq_analysis[i] ** 2) / (freq_end - freq_start)) * (i + 1) / ( 2 * pi))
     verts = []
     colors = []
-    # bucketify things
-    buckets = []
-    bucket_width = len(freqs) / num_buckets
-    idx = 0
-    for i in range(num_buckets):
-        buckets.append(0)
-        for j in range(int(bucket_width)):
-            buckets[i] += freqs[i * int(bucket_width) + j]
-        if int(bucket_width) == 0:
-            buckets[i] += get_partial_index(freqs, len(freqs) * i / num_buckets)
-        buckets[i] = np.sqrt(buckets[i])
-
-    buckets = freqs
     height = 50
-    width = 800 / len(buckets)
+    width = 800 / len(freqs)
     circle_points = 16
-    max_index = len(buckets)
+    max_index = len(freqs)
     if len(last_heights) == 0:
         last_heights = [0] * max_index
     heights = []
     for i in range(max_index):
         color = hsv_to_rgb(360 * i / max_index, 0.7, 0.7)
         height_increment = int(width)
-        box_height = height_increment + height * buckets[i]
+        box_height = height_increment + height * freqs[i]
         box_height = height_increment * (box_height // height_increment)
         if box_height < last_heights[i]:
-            last_heights[i] -= 1
-            box_height = last_heights[i]
+            diff = last_heights[i] - box_height
+            box_height = last_heights[i] - np.sqrt(diff)
         heights.append(box_height)
         points, cols = make_square((i - max_index // 2) * width, 0, width, box_height, color)
         verts += points
