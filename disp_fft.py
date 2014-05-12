@@ -15,7 +15,7 @@ from array import array
 audio = wave.open(argv[1], 'r')
 audio_length = audio.getnframes() / audio.getframerate()
 full_audio = array('I', audio.readframes(audio.getnframes())).tolist()
-full_audio = [x / (2 ** 32) for x in full_audio]
+full_audio = [x / (2 ** 32) - 0.5 for x in full_audio]
 sample_rate = audio.getframerate()
 
 colors = []
@@ -23,10 +23,12 @@ colors = []
 print("wav read finished, finding average")
 print(sum(full_audio) / len(full_audio))
 
-analysis_width = 2048
-num_buckets = 64
+analysis_width = 128
+num_buckets = 128
 huedelta = 0.001
+print("padding")
 full_audio += [0] * analysis_width
+full_audio = [0] * analysis_width + full_audio
 
 def get_partial_index(array, idx):
     min_idx = int(idx)
@@ -82,10 +84,12 @@ def make_square(x, y, w, h, color):
     return verts, colors
 
 def build_verts(seg):
-    freqs = fft(seg)
-    freq_start = 0 #freq_index(50)
-    freq_end = len(freqs) / 2 #freq_index(20000)
-    freqs = np.abs(freqs[freq_start:freq_end])
+    freq_analysis = fft(seg)
+    freq_start = 4 #freq_index()
+    freq_end = freq_index(20000)
+    freqs = []
+    for i in range(freq_start, freq_end):
+        freqs.append(np.abs(freq_analysis[i] ** 2) / (freq_end - freq_start))
     verts = []
     colors = []
     # bucketify things
@@ -98,22 +102,26 @@ def build_verts(seg):
             buckets[i] += freqs[i * int(bucket_width) + j]
         if int(bucket_width) == 0:
             buckets[i] += get_partial_index(freqs, len(freqs) * i / num_buckets)
+        buckets[i] = np.sqrt(buckets[i])
 
-    buckets = np.sqrt(np.divide(buckets, analysis_width))
+    buckets = freqs
     height = 50
-    width = 10
+    width = 800 / len(buckets)
     circle_points = 16
     max_index = len(buckets)
     for i in range(max_index):
         color = hsv_to_rgb(360 * i / max_index, 0.7, 0.7)
-        points, cols = make_square((i - max_index // 2) * width, 0, width, 5 + height * buckets[i], color)
+        height_increment = int(width)
+        box_height = height_increment + height * buckets[i]
+        box_height = height_increment * (box_height // height_increment)
+        points, cols = make_square((i - max_index // 2) * width, 0, width, box_height, color)
         verts += points
         colors += cols
     return VertexAttribute(verts), VertexAttribute(colors)
 
 def resize(w, h):
     glLoadIdentity()
-#    glTranslate(-1, -1, 0)
+    glTranslate(0, -1, 0)
     height_scale = w / h / 400
     glScale(2 / 800, height_scale, 1)
     glViewport(0, 0, w, h)
@@ -126,7 +134,7 @@ def display():
     if index == 0:
         print('song start')
 
-    verts,col = build_verts(full_audio[index : index + analysis_width])
+    verts,col = build_verts(full_audio[index - analysis_width // 2: index + analysis_width // 2])
 #    cols = VertexAttribute(colors[0:len(verts) * 3])
     vbo.replace_data(verts, colors=col)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
