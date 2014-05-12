@@ -84,6 +84,7 @@ def make_square(x, y, w, h, color):
     return verts, colors
 
 def build_verts(seg):
+    global last_heights
     freq_analysis = fft(seg)
     freq_start = 4 #freq_index()
     freq_end = freq_index(20000)
@@ -109,14 +110,22 @@ def build_verts(seg):
     width = 800 / len(buckets)
     circle_points = 16
     max_index = len(buckets)
+    if len(last_heights) == 0:
+        last_heights = [0] * max_index
+    heights = []
     for i in range(max_index):
         color = hsv_to_rgb(360 * i / max_index, 0.7, 0.7)
         height_increment = int(width)
         box_height = height_increment + height * buckets[i]
         box_height = height_increment * (box_height // height_increment)
+        if box_height < last_heights[i]:
+            last_heights[i] -= 1
+            box_height = last_heights[i]
+        heights.append(box_height)
         points, cols = make_square((i - max_index // 2) * width, 0, width, box_height, color)
         verts += points
         colors += cols
+    last_heights = heights
     return VertexAttribute(verts), VertexAttribute(colors)
 
 def resize(w, h):
@@ -145,6 +154,7 @@ def display():
       shader.unbind()
 
 create_window('plot', display=display, resize=resize)
+last_heights = []
 verts,cols = build_verts(full_audio[0:analysis_width])
 vbo = VertexBufferObject(verts, colors=cols)
 shader = ShaderProgram('shaders/basic.vert', 'shaders/basic.frag')
