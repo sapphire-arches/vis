@@ -23,7 +23,7 @@ colors = []
 print("wav read finished, finding average")
 print(sum(full_audio) / len(full_audio))
 
-analysis_width = 128
+analysis_width = 1024
 huedelta = 0.001
 print("padding")
 full_audio += [0] * analysis_width
@@ -84,17 +84,21 @@ def make_square(x, y, w, h, color):
 
 def build_verts(seg):
     global last_heights
+    global window_height, window_width
     freq_analysis = fft(seg)
-    freq_start = 4 #freq_index()
-    freq_end = freq_index(20000)
+    # select for piano fundimentals
+    freq_start = freq_index(30)
+    freq_end = freq_index(4000)
     freqs = []
     for i in range(freq_start, freq_end):
         # see http://en.wikipedia.org/wiki/Spectral_estimation and http://en.wikipedia.org/wiki/Periodogram
-        freqs.append((np.abs(freq_analysis[i] ** 2) / (freq_end - freq_start)) * (i + 1) / ( 2 * pi))
+        sample = np.abs(freq_analysis[i] ** 2) / (analysis_width * (analysis_width / 2))
+        sample = sample * (i + 1) / (2 * pi)
+        freqs.append(sample)
     verts = []
     colors = []
-    height = 50
-    width = 800 / len(freqs)
+    height = (1 / 1.1) * window_height
+    width = window_width / len(freqs)
     circle_points = 16
     max_index = len(freqs)
     if len(last_heights) == 0:
@@ -109,30 +113,37 @@ def build_verts(seg):
             diff = last_heights[i] - box_height
             box_height = last_heights[i] - np.sqrt(diff)
         heights.append(box_height)
-        points, cols = make_square((i - max_index // 2) * width, 0, width, box_height, color)
+        points, cols = make_square(i * width, 0, width, box_height, color)
         verts += points
         colors += cols
     last_heights = heights
-    return VertexAttribute(verts), VertexAttribute(colors)
+    return verts, colors
 
 def resize(w, h):
+    global window_width, window_height
+    window_width = w
+    window_height = h
     glLoadIdentity()
-    glTranslate(0, -1, 0)
-    height_scale = w / h / 400
-    glScale(2 / 800, height_scale, 1)
+    glTranslate(-1, -1, 0)
+    glScale(2 / w, 2 / h, 1)
     glViewport(0, 0, w, h)
 
 def display():
     global frame
     global start_time
+    global window_height, window_width
     frame += 1
-    index = int(len(full_audio) * mixer.music.get_pos() / audio_length / 1000)
+    completion = mixer.music.get_pos() / audio_length / 1000
+    index = int(len(full_audio) * completion)
     if index == 0:
         print('song start')
 
     verts,col = build_verts(full_audio[index - analysis_width // 2: index + analysis_width // 2])
+    v, c = make_square(0, window_height - 15, completion * window_width, 15, hsv_to_rgb(15, 0.2, 0.7))
+    verts += v
+    col += c
 #    cols = VertexAttribute(colors[0:len(verts) * 3])
-    vbo.replace_data(verts, colors=col)
+    vbo.replace_data(VertexAttribute(verts), colors=VertexAttribute(col))
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     shader.bind()
     try:
@@ -141,16 +152,18 @@ def display():
       shader.unbind()
 
 create_window('plot', display=display, resize=resize)
+window_width = 800
+window_height = 600
 last_heights = []
 verts,cols = build_verts(full_audio[0:analysis_width])
-vbo = VertexBufferObject(verts, colors=cols)
+vbo = VertexBufferObject(VertexAttribute(verts), colors=VertexAttribute(cols))
 shader = ShaderProgram('shaders/basic.vert', 'shaders/basic.frag')
 glClearColor(0, 0, 0, 0)
 frame = 0
 
 mixer.init()
 mixer.music.load(argv[1])
-mixer.music.play()
+mixer.music.play(loops=-1)
 
 start_time = time()
 main_loop()

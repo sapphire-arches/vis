@@ -39,6 +39,7 @@ class VertexAttribute(Iterable):
 
 class VertexBufferObject:
     def _build_data(self, positions, colors):
+        self._length = len(positions)
         if not isinstance(positions, VertexAttribute):
             raise TypeError("positions must be a VertexAttribute (is %s)" % type(positions))
         if colors is not None and not isinstance(colors, VertexAttribute):
@@ -64,7 +65,6 @@ class VertexBufferObject:
 
         self._mode = mode
         self._vbo = vbo.VBO(data)
-        self._length = len(positions)
 
     def replace_data(self, positions, colors=None):
         self._has_color = colors is not None
