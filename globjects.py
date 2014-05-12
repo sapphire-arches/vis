@@ -40,9 +40,9 @@ class VertexAttribute(Iterable):
 class VertexBufferObject:
     def _build_data(self, positions, colors):
         if not isinstance(positions, VertexAttribute):
-            raise TypeError("positions must be a VertexAttribute")
+            raise TypeError("positions must be a VertexAttribute (is %s)" % type(positions))
         if colors is not None and not isinstance(colors, VertexAttribute):
-            raise TypeError("Colors must be an instance of VertexAttribute")
+            raise TypeError("Colors must be an instance of VertexAttribute (is %s)" % type(colors))
         data = None
         if colors is not None:
             if not len(colors) == len(positions):

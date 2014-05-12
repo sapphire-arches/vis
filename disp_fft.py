@@ -4,40 +4,29 @@ from color import hsv_to_rgb
 from OpenGL.GL import *
 from math import pi
 import numpy as np
+from numpy import sin, cos
 from numpy.fft import fft
 from sys import argv
 from time import time
 from pygame import mixer
 import wave
+from array import array
 
 audio = wave.open(argv[1], 'r')
-full_audio = []
 audio_length = audio.getnframes() / audio.getframerate()
-for i in range(audio.getnframes()):
-    full_audio.append((int.from_bytes(audio.readframes(1), 'little') / 2 ** 32) - 0.5)
+full_audio = array('I', audio.readframes(audio.getnframes())).tolist()
+full_audio = [x / (2 ** 32) for x in full_audio]
+sample_rate = audio.getframerate()
 
 colors = []
 
 print("wav read finished, finding average")
 print(sum(full_audio) / len(full_audio))
 
-analysis_width = 1024
-num_buckets = analysis_width // 4
-huedelta = 300 / num_buckets
+analysis_width = 2048
+num_buckets = 64
+huedelta = 0.001
 full_audio += [0] * analysis_width
-
-def build_colors(num_quads):
-    colors = []
-    for i in range(num_quads):
-        color1 = hsv_to_rgb(i * huedelta, 0.7, 0.7)
-        color2 = hsv_to_rgb((i + 1) * huedelta, 0.7, 0.7)
-        colors += color1;
-        colors += color2;
-        colors += color1;
-        colors += color1;
-        colors += color2;
-        colors += color2;
-    return colors
 
 def get_partial_index(array, idx):
     min_idx = int(idx)
@@ -45,12 +34,60 @@ def get_partial_index(array, idx):
     if idx + 1 < len(array):
         max_idx = int(idx + 1)
     f = idx - min_idx
-    return array[min_idx] * f + (1 - f) * array[max_idx]
+    return array[min_idx] * (1 - f) + f * array[max_idx]
+
+def make_circle_point(angle, radius):
+    return (cos(angle) * radius, sin(angle) * radius, 0)
+
+def freq_index(x):
+    return round(analysis_width * x / sample_rate)
+
+def make_circle(inner_radius, outer_radius, steps, color=None):
+    delta = 2 * pi / steps
+    hue_delta = -100 / steps
+    hue = -hue_delta * steps / 2
+    saturation = 0.7
+    value = 0.7
+    points = []
+    colors = []
+    for i in range(0, steps):
+        angle = i * delta
+        color1 = color2 = None
+        if color is None:
+            color1 = hsv_to_rgb(hue            , saturation, value)
+            color2 = hsv_to_rgb(hue + hue_delta, saturation, value)
+        else:
+            color1 = color
+            color2 = color
+        points += make_circle_point(angle        , inner_radius); colors +=  color1
+        points += make_circle_point(angle + delta, outer_radius); colors +=  color2
+        points += make_circle_point(angle        , outer_radius); colors +=  color1
+        points += make_circle_point(angle        , inner_radius); colors +=  color1
+        points += make_circle_point(angle + delta, inner_radius); colors +=  color2
+        points += make_circle_point(angle + delta, outer_radius); colors +=  color2
+        if i == steps / 2:
+            hue_delta = -hue_delta
+        hue += hue_delta
+    return points, colors
+
+def make_square(x, y, w, h, color):
+    verts = []
+    colors = [color] * 6
+    verts += (x    , y    , 0)
+    verts += (x + w, y    , 0)
+    verts += (x    , y + h, 0)
+    verts += (x + w, y    , 0)
+    verts += (x + w, y + h, 0)
+    verts += (x    , y + h, 0)
+    return verts, colors
 
 def build_verts(seg):
     freqs = fft(seg)
-    freqs = np.abs(freqs[1:len(freqs) // 2])
+    freq_start = 0 #freq_index(50)
+    freq_end = len(freqs) / 2 #freq_index(20000)
+    freqs = np.abs(freqs[freq_start:freq_end])
     verts = []
+    colors = []
     # bucketify things
     buckets = []
     bucket_width = len(freqs) / num_buckets
@@ -62,24 +99,21 @@ def build_verts(seg):
         if int(bucket_width) == 0:
             buckets[i] += get_partial_index(freqs, len(freqs) * i / num_buckets)
 
-    bucket_max = analysis_width / 4
-
-    buckets = [x / bucket_max for x in buckets]
-    xdelta = 800 / (len(buckets) - 1)
-    height = 300
-    for i in range(len(buckets) - 1):
-        xbase = i * xdelta
-        verts += (xbase         , 0                      , 0)
-        verts += (xbase + xdelta, height * buckets[i + 1], 0)
-        verts += (xbase         , height * buckets[i    ], 0)
-        verts += (xbase         , 0                      , 0)
-        verts += (xbase + xdelta, 0                      , 0)
-        verts += (xbase + xdelta, height * buckets[i + 1], 0)
-    return VertexAttribute(verts)
+    buckets = np.sqrt(np.divide(buckets, analysis_width))
+    height = 50
+    width = 10
+    circle_points = 16
+    max_index = len(buckets)
+    for i in range(max_index):
+        color = hsv_to_rgb(360 * i / max_index, 0.7, 0.7)
+        points, cols = make_square((i - max_index // 2) * width, 0, width, 5 + height * buckets[i], color)
+        verts += points
+        colors += cols
+    return VertexAttribute(verts), VertexAttribute(colors)
 
 def resize(w, h):
     glLoadIdentity()
-    glTranslate(-1, -1, 0)
+#    glTranslate(-1, -1, 0)
     height_scale = w / h / 400
     glScale(2 / 800, height_scale, 1)
     glViewport(0, 0, w, h)
@@ -92,9 +126,9 @@ def display():
     if index == 0:
         print('song start')
 
-    verts = build_verts(full_audio[index : index + analysis_width])
-    cols = VertexAttribute(colors[0:len(verts) * 3])
-    vbo.replace_data(verts, colors=cols)
+    verts,col = build_verts(full_audio[index : index + analysis_width])
+#    cols = VertexAttribute(colors[0:len(verts) * 3])
+    vbo.replace_data(verts, colors=col)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     shader.bind()
     try:
@@ -103,10 +137,8 @@ def display():
       shader.unbind()
 
 create_window('plot', display=display, resize=resize)
-colors = build_colors(num_buckets)
-verts = build_verts(full_audio[0:analysis_width])
-cols = VertexAttribute(colors[0:3*len(verts)])
-vbo = VertexBufferObject(verts, colors=VertexAttribute(colors[0:3*len(verts)]))
+verts,cols = build_verts(full_audio[0:analysis_width])
+vbo = VertexBufferObject(verts, colors=cols)
 shader = ShaderProgram('shaders/basic.vert', 'shaders/basic.frag')
 glClearColor(0, 0, 0, 0)
 frame = 0
