@@ -101,7 +101,6 @@ def build_verts(seg):
         recent_max = s
     for i in range(len(freqs)):
         freqs[i] /= recent_max
-    print(s, recent_max)
     verts = []
     colors = []
     height = (1 / 1.1) * window_height
