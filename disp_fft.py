@@ -1,6 +1,7 @@
-from windowmanagement import create_window, main_loop
-from globjects import VertexBufferObject, VertexAttribute, ShaderProgram
-from color import hsv_to_rgb
+from lib import windowmanagement, globjects, color
+from lib.windowmanagement import create_window, main_loop
+from lib.globjects import VertexBufferObject, VertexAttribute, ShaderProgram
+from lib.color import hsv_to_rgb
 from OpenGL.GL import *
 from math import pi
 import numpy as np
