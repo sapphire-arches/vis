@@ -85,6 +85,7 @@ def make_square(x, y, w, h, color):
 def build_verts(seg):
     global last_heights
     global window_height, window_width
+    global recent_max
     freq_analysis = fft(seg)
     # select for piano fundimentals
     freq_start = freq_index(30)
@@ -95,6 +96,12 @@ def build_verts(seg):
         sample = np.abs(freq_analysis[i] ** 2) / (analysis_width * (analysis_width / 2))
         sample = sample * (i + 1) / (2 * pi)
         freqs.append(sample)
+    s = max(freqs)
+    if s > recent_max:
+        recent_max = s
+    for i in range(len(freqs)):
+        freqs[i] /= recent_max
+    print(s, recent_max)
     verts = []
     colors = []
     height = (1 / 1.1) * window_height
@@ -120,7 +127,6 @@ def build_verts(seg):
     return verts, colors
 
 def resize(w, h):
-    global window_width, window_height
     window_width = w
     window_height = h
     glLoadIdentity()
@@ -133,7 +139,7 @@ def display():
     global start_time
     global window_height, window_width
     frame += 1
-    completion = mixer.music.get_pos() / audio_length / 1000
+    completion = (mixer.music.get_pos() / 1000 % audio_length) / audio_length
     index = int(len(full_audio) * completion)
     if index == 0:
         print('song start')
@@ -142,7 +148,6 @@ def display():
     v, c = make_square(0, window_height - 15, completion * window_width, 15, hsv_to_rgb(15, 0.2, 0.7))
     verts += v
     col += c
-#    cols = VertexAttribute(colors[0:len(verts) * 3])
     vbo.replace_data(VertexAttribute(verts), colors=VertexAttribute(col))
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     shader.bind()
@@ -155,6 +160,7 @@ create_window('plot', display=display, resize=resize)
 window_width = 800
 window_height = 600
 last_heights = []
+recent_max = 0.01
 verts,cols = build_verts(full_audio[0:analysis_width])
 vbo = VertexBufferObject(VertexAttribute(verts), colors=VertexAttribute(cols))
 shader = ShaderProgram('shaders/basic.vert', 'shaders/basic.frag')
