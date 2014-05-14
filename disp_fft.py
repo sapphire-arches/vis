@@ -6,10 +6,8 @@ from visuals.generic import make_square
 from OpenGL.GL import *
 from math import pi
 import numpy as np
-from numpy import sin, cos
 from numpy.fft import fft
 from sys import argv
-from time import time
 from pygame import mixer
 import wave
 from array import array
@@ -39,39 +37,8 @@ def get_partial_index(array, idx):
     f = idx - min_idx
     return array[min_idx] * (1 - f) + f * array[max_idx]
 
-def make_circle_point(angle, radius):
-    return (cos(angle) * radius, sin(angle) * radius, 0)
-
 def freq_index(x):
     return round(analysis_width * x / sample_rate)
-
-def make_circle(inner_radius, outer_radius, steps, color=None):
-    delta = 2 * pi / steps
-    hue_delta = -100 / steps
-    hue = -hue_delta * steps / 2
-    saturation = 0.7
-    value = 0.7
-    points = []
-    colors = []
-    for i in range(0, steps):
-        angle = i * delta
-        color1 = color2 = None
-        if color is None:
-            color1 = hsv_to_rgb(hue            , saturation, value)
-            color2 = hsv_to_rgb(hue + hue_delta, saturation, value)
-        else:
-            color1 = color
-            color2 = color
-        points += make_circle_point(angle        , inner_radius); colors +=  color1
-        points += make_circle_point(angle + delta, outer_radius); colors +=  color2
-        points += make_circle_point(angle        , outer_radius); colors +=  color1
-        points += make_circle_point(angle        , inner_radius); colors +=  color1
-        points += make_circle_point(angle + delta, inner_radius); colors +=  color2
-        points += make_circle_point(angle + delta, outer_radius); colors +=  color2
-        if i == steps / 2:
-            hue_delta = -hue_delta
-        hue += hue_delta
-    return points, colors
 
 def build_verts(seg):
     global selected_visual
@@ -98,7 +65,6 @@ def resize(w, h):
 
 def display():
     global frame
-    global start_time
     global window_height, window_width
     frame += 1
     completion = (mixer.music.get_pos() / 1000 % audio_length) / audio_length
@@ -132,5 +98,4 @@ mixer.init()
 mixer.music.load(argv[1])
 mixer.music.play(loops=-1)
 
-start_time = time()
 main_loop()
