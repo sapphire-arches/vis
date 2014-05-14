@@ -1,7 +1,8 @@
-from lib import windowmanagement, globjects, color
 from lib.windowmanagement import create_window, main_loop
 from lib.globjects import VertexBufferObject, VertexAttribute, ShaderProgram
 from lib.color import hsv_to_rgb
+from visuals import visuals
+from visuals.generic import make_square
 from OpenGL.GL import *
 from math import pi
 import numpy as np
@@ -72,21 +73,9 @@ def make_circle(inner_radius, outer_radius, steps, color=None):
         hue += hue_delta
     return points, colors
 
-def make_square(x, y, w, h, color):
-    verts = []
-    colors = [color] * 6
-    verts += (x    , y    , 0)
-    verts += (x + w, y    , 0)
-    verts += (x    , y + h, 0)
-    verts += (x + w, y    , 0)
-    verts += (x + w, y + h, 0)
-    verts += (x    , y + h, 0)
-    return verts, colors
-
 def build_verts(seg):
-    global last_heights
+    global selected_visual
     global window_height, window_width
-    global recent_max
     freq_analysis = fft(seg)
     # select for piano fundimentals
     freq_start = freq_index(30)
@@ -97,34 +86,7 @@ def build_verts(seg):
         sample = np.abs(freq_analysis[i] ** 2) / (analysis_width * (analysis_width / 2))
         sample = sample * (i + 1) / (2 * pi)
         freqs.append(sample)
-    s = max(freqs)
-    if s > recent_max:
-        recent_max = s
-    for i in range(len(freqs)):
-        freqs[i] /= recent_max
-    verts = []
-    colors = []
-    height = (1 / 1.1) * window_height
-    width = window_width / len(freqs)
-    circle_points = 16
-    max_index = len(freqs)
-    if len(last_heights) == 0:
-        last_heights = [0] * max_index
-    heights = []
-    for i in range(max_index):
-        color = hsv_to_rgb(360 * i / max_index, 0.7, 0.7)
-        height_increment = int(width)
-        box_height = height_increment + height * freqs[i]
-        box_height = height_increment * (box_height // height_increment)
-        if box_height < last_heights[i]:
-            diff = last_heights[i] - box_height
-            box_height = last_heights[i] - np.sqrt(diff)
-        heights.append(box_height)
-        points, cols = make_square(i * width, 0, width, box_height, color)
-        verts += points
-        colors += cols
-    last_heights = heights
-    return verts, colors
+    return selected_visual.get_verts(window_width, window_height, freqs)
 
 def resize(w, h):
     window_width = w
@@ -159,8 +121,7 @@ def display():
 create_window('plot', display=display, resize=resize)
 window_width = 800
 window_height = 600
-last_heights = []
-recent_max = 0.01
+selected_visual = visuals['bars']()
 verts,cols = build_verts(full_audio[0:analysis_width])
 vbo = VertexBufferObject(VertexAttribute(verts), colors=VertexAttribute(cols))
 shader = ShaderProgram('shaders/basic.vert', 'shaders/basic.frag')
