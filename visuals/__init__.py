@@ -9,7 +9,9 @@ class Visual:
         return
 
 from visuals.bars import Bars
+from visuals.circle import Circle
 
 visuals = {
-        'bars' : Bars
+     'bars' : Bars
+    ,'circle' : Circle
 }

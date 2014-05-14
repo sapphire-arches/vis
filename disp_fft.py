@@ -88,7 +88,7 @@ def display():
 create_window('plot', display=display, resize=resize)
 window_width = 800
 window_height = 600
-selected_visual = visuals['bars']()
+selected_visual = visuals['circle']()
 verts,cols = build_verts(full_audio[0:analysis_width])
 vbo = VertexBufferObject(VertexAttribute(verts), colors=VertexAttribute(cols))
 shader = ShaderProgram('shaders/basic.vert', 'shaders/basic.frag')
