@@ -1,11 +1,11 @@
-from windowmanagement import create_window, main_loop
-from globjects import VertexBufferObject, VertexAttribute, ShaderProgram
+from util.windowmanagement import create_window, main_loop
+from util.globjects import VertexBufferObject, VertexAttribute, ShaderProgram
+from util.color import hsv_to_rgb
 from OpenGL.GL import *
 from OpenGL.GL import shaders
 from OpenGL.arrays import vbo
 from math import pi
 from numpy import sin, cos
-from color import hsv_to_rgb
 import numpy as np
 
 shader = None
