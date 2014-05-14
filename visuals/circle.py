@@ -46,4 +46,5 @@ class Circle(Visual):
             verts += points
             colors += cols
         self._last_heights = heights
+        self._recent_max -= 0.01 # decay recent max to account for volume changes
         return verts, colors
