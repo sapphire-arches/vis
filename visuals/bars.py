@@ -1,6 +1,6 @@
 from visuals import Visual
 from visuals.generic import make_square
-from lib.color import hsv_to_rgb
+from util.color import hsv_to_rgb
 import numpy as np
 
 class Bars(Visual):

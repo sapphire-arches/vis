@@ -1,6 +1,6 @@
-from lib.windowmanagement import create_window, main_loop
-from lib.globjects import VertexBufferObject, VertexAttribute, ShaderProgram
-from lib.color import hsv_to_rgb
+from util.windowmanagement import create_window, main_loop
+from util.globjects import VertexBufferObject, VertexAttribute, ShaderProgram
+from util.color import hsv_to_rgb
 from visuals import visuals
 from visuals.generic import make_square
 from OpenGL.GL import *
