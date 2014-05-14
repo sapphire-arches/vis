@@ -7,7 +7,7 @@ import numpy as np
 def _type_check(val, errormessage, *types):
     for type_ in types:
         if not isinstance(val, type_):
-            raise TypeError(errormessage % (str(val)))
+            raise TypeError(errormessage % (str(type(val))))
 
 class VertexAttribute(Iterable):
     def __init__(self, data, components=3):
