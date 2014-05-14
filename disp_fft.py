@@ -56,6 +56,7 @@ def build_verts(seg):
     return selected_visual.get_verts(window_width, window_height, freqs)
 
 def resize(w, h):
+    global window_width, window_height
     window_width = w
     window_height = h
     glLoadIdentity()
